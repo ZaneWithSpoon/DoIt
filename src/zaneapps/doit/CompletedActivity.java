@@ -21,25 +21,42 @@ import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class CompletedActivity extends ActionBarActivity {
 
 	ArrayList<ListItem> toDoList = new ArrayList<ListItem>();
 
+	// created an intent for MainActivity.java
 	public void goToList() {
 		Intent unfinishedActs = new Intent(this, MainActivity.class);
 		startActivity(unfinishedActs);
 	}
 
-	public int getItemsFinished() {
-		int z = 0;
-		for (int i = 0; i < toDoList.size(); i++) {
-			if ((toDoList.get(i).isFinished()))
-				z++;
-		}
-		return z;
+	// creates an intent for MoreActivity.java
+	public void goToMore(int i) {
+		Intent moreInfo = new Intent(this, MoreActivity.class);
+		moreInfo.putExtra("index", i);
+		startActivity(moreInfo);
 	}
 
+	// creates an intent for SettingsActivity.java
+	public void goToSettings() {
+		Intent settingActs = new Intent(this, SettingsActivity.class);
+		startActivity(settingActs);
+	}
+
+	// returns the number of Finished Items
+	public int getItemsFinished() {
+		int count = 0;
+		for (int i = 0; i < toDoList.size(); i++) {
+			if ((toDoList.get(i).timesCompleted) > 0)
+				count++;
+		}
+		return count;
+	}
+
+	// saves
 	public void save() throws FileNotFoundException {
 		FileOutputStream fos;
 		try {
@@ -64,22 +81,25 @@ public class CompletedActivity extends ActionBarActivity {
 		}
 	}
 
-	public void createScreen() {
+	public void createScreen() throws FileNotFoundException {
 
 		// removing all entries from the page
 		LinearLayout linearLayout = (LinearLayout) findViewById(R.id.listView);
 		linearLayout.removeAllViews();
 
-		// populating the page
-		try {
-			load();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		load();
+
+		
+		// calculating productivity points
+		int score = 0;
+		for (int i = 0; i < toDoList.size(); i++) {
+			score += toDoList.get(i).timesCompleted;
 		}
+		TextView points = (TextView) findViewById(R.id.points);
+		points.setText(Integer.toString(score));
 
-		int length = getItemsFinished();
-
+		//populating the page
+		int length = getItemsFinished();//getting the number of finished items
 		if (length == 0) {
 
 			LinearLayout weightIt = new LinearLayout(this);
@@ -87,92 +107,80 @@ public class CompletedActivity extends ActionBarActivity {
 
 			// adding the new tasks in the new linear layout
 			TextView valueTV = new TextView(this);
+			//if there are no finished items, add the string R.string.emptyDone
 			valueTV.setText(R.string.emptyDone);
 			valueTV.setId(0);
-			// valueTV.setLayoutParams(new
-			// LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT,
-			// LayoutParams.WRAP_CONTENT, 1.0f));
 			((LinearLayout) weightIt).addView(valueTV);
 
 		}
 
-		else {
+		else { //more that 0 finished items
 
+			// a linear view is created for every to do list item
+			// the ones that are finished are set to invisible
 			for (int i = 0; i < toDoList.size(); i++) {
 
+				//new linearlayout added
 				LinearLayout weightIt = new LinearLayout(this);
-				// weightIt.setLayoutParams(new
-				// LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,
-				// LayoutParams.WRAP_CONTENT,1));
+				((LinearLayout) linearLayout).addView(weightIt);
+
+				//creating parameters for text
 				LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
 						LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT,
 						1.0f);
-				textParams.weight = 1.0f;
-				// textParams.gravity=Gravity.RIGHT;
 
-				LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
-						LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-				// textParams.weight = 1.0f;
-				textParams.gravity = Gravity.LEFT;
-
-				// weightIt.setLayoutParams(layoutParams);
-
-				((LinearLayout) linearLayout).addView(weightIt);
-
-				// adding the new tasks in the new linear layout
+				// adding the new views to the new linear layout
 				TextView valueTV = new TextView(this);
-				valueTV.setText(toDoList.get(i).getTitle());
+				//if this task was completed more than once, print how many
+				if (toDoList.get(i).timesCompleted > 1){
+					valueTV.setText(toDoList.get(i).title + " ("
+							+ toDoList.get(i).timesCompleted + ")");
+				}
+				else//else print title
+					valueTV.setText(toDoList.get(i).title);
 				valueTV.setId(i);
-				valueTV.setMaxWidth(425);
 				valueTV.setLayoutParams(textParams);
 
-				if (!(toDoList.get(i).isFinished()))
-					valueTV.setVisibility(View.GONE);
-
-				((LinearLayout) weightIt).addView(valueTV);
-
+				
 				Button notFinished = new Button(this);
-				notFinished.setText(R.string.notFinished);
+				notFinished.setText(R.string.more);
 				notFinished.setId(i);
-				if (!(toDoList.get(i).isFinished()))
+				//if this item isn't finished, set to invisible
+				if (toDoList.get(i).timesCompleted < 1){
 					notFinished.setVisibility(View.GONE);
+					valueTV.setVisibility(View.GONE);
+				}
+				
+				((LinearLayout) weightIt).addView(valueTV);
 				((LinearLayout) weightIt).addView(notFinished);
 
 				notFinished.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						try {
-							moveToDo(v);
-						} catch (FileNotFoundException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+						goToMore(v.getId());
 					}
-
 				});
-
 			}
 		}
-
-		TextView points = (TextView) findViewById(R.id.points);
-		points.setText(Integer.toString(length));
 	}
 
-	public void moveToDo(View view) throws FileNotFoundException {
-
-		toDoList.get(view.getId()).unfinished();
-		save();
-		createScreen();
-	}
-
+	
+	//code for this activity starts here
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_completed);
 
-		createScreen();
-		
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+		try {
+			createScreen();//creates screen
+		} catch (FileNotFoundException e) {
+			Toast.makeText(getApplicationContext(),
+					"FileNotFoundException in createScreen",
+					Toast.LENGTH_LONG).show();
+		}
+
 	}
 
 	@Override
@@ -191,7 +199,10 @@ public class CompletedActivity extends ActionBarActivity {
 			goToList();
 			return true;
 		case R.id.action_settings:
-			// openSettings();
+			goToSettings();
+			return true;
+		case android.R.id.home:
+			goToList();
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);

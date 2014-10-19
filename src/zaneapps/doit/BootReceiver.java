@@ -14,6 +14,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
@@ -22,16 +23,17 @@ import android.app.PendingIntent;
 
 public class BootReceiver extends BroadcastReceiver {
 
-	ArrayList<String> toDoList;
+	ArrayList<ListItem> toDoList;
 
+	//code starts here for this class
 	@Override
 	public void onReceive(Context context, Intent intent) {
 
 		try {
 			generateNotification(context, intent);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Toast.makeText(context,
+					"Notification Failed", Toast.LENGTH_LONG).show();
 		}
 
 	}
@@ -41,48 +43,70 @@ public class BootReceiver extends BroadcastReceiver {
 		try {
 			fis = context.openFileInput("toDoListFile");
 			ObjectInputStream ois = new ObjectInputStream(fis);
-			toDoList = (ArrayList<String>) ois.readObject();
+			toDoList = (ArrayList<ListItem>) ois.readObject();
 			ois.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			Toast.makeText(context,
+					"Notification Failed to load", Toast.LENGTH_LONG).show();
 		}
 	}
 
 	public void generateNotification(Context context, Intent intent)
 			throws FileNotFoundException {
+		//loads the list
 		load(context);
 
+		//sets the rnotification to lead to MainActivity.java
 		Intent resultIntent = new Intent(context, MainActivity.class);
 
+		//pending intent is created out of that intent
 		PendingIntent resultPendingIntent = PendingIntent.getActivity(context,
 				0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-		Random rand = new Random();
-
+	//builds a notification without contentText
 		NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
-				context)
-				.setSmallIcon(R.drawable.ic_launcher)
+				context).setSmallIcon(R.drawable.ic_launcher)
 				.setContentTitle("You know you should")
-				.setContentText(toDoList.get(rand.nextInt(toDoList.size() - 1)))
-				// .setContentText("something")
 				.setContentIntent(resultPendingIntent);
-		long[] pattern = { 500, 500, 500, 500, 500, 500 };
-		mBuilder.setVibrate(pattern);
-		mBuilder.setLights(13120255, 500, 500);
-		// if(rand.nextInt(1)==0)
-		// Uri alarmSound = RingtoneManager.(R.raw.quit_wasting_time);
-		Uri alarmSound = RingtoneManager
-				.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-		mBuilder.setSound(alarmSound);
+		//custom vibration pattern
+		mBuilder.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+		mBuilder.setVibrate(new long[]{500, 500, 500, 500, 500, 500});
+        mBuilder.setLights(Color.RED, 3000, 3000);
 
-		mBuilder.setContentIntent(resultPendingIntent);
+		//Pulls a random item from the unfinished list 
+		int unfinishedCount = 0;
+		for (int i = 0; i < toDoList.size(); i++) {
+			if (toDoList.get(i).timesOnList > 0)
+				unfinishedCount++;
+		}
 
-		int mNotificationId = 001;
+		Random rand = new Random();
+		int random = rand.nextInt(unfinishedCount);
+		String contentText = null;
 
+		for (int i = 0; i < toDoList.size(); i++) {
+			if (toDoList.get(i).timesOnList > 0) {
+
+				if (random == 0) {
+					contentText = toDoList.get(i).title;
+					//sets the random list item as contextText
+					mBuilder.setContentText(contentText);
+					break;
+				} else
+					random--;
+
+			}
+
+		}
+
+
+
+		//creates the notification
 		NotificationManager mNotifyMgr = (NotificationManager) context
 				.getSystemService(context.NOTIFICATION_SERVICE);
 
-		mNotifyMgr.notify(mNotificationId, mBuilder.build());
+		mNotifyMgr.notify(0, mBuilder.build());
+
 	}
 
 }

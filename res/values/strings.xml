@@ -25,5 +25,12 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_example">Example action</string>
     <string name="title_activity_completed">CompletedActivity</string>
+    <string name="more">More</string>
+    <string name="title_activity_more">More Info</string>
+    <string name="started">Task Started:</string>
+    <string name="finished">Task Finished:</string>
+    <string name="timesComleted">Times Completed:</string>
+    <string name="title_activity_search">Search</string>
+    <string name="title_activity_settings">Settings</string>
 
 </resources>
